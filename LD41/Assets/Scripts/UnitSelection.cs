@@ -18,6 +18,8 @@ public class UnitSelection : MonoBehaviour {
     private bool isSelectionActive;
     private bool isSelectionBoxActive;
 
+    private Transform currentTowerTarget;
+
     void Start () {
         units = new List<Unit>();
     }
@@ -29,6 +31,10 @@ public class UnitSelection : MonoBehaviour {
 
         // consider drawing selection box
         if (isSelectionBoxActive) {
+            if (units.Count > 0 && Vector3.Distance(selectionStart, Input.mousePosition) >= 1.0f) {
+                foreach (Unit unit in units) unit.isSelected = false;
+                units.Clear();
+            }
             foreach (Unit unit in GetUnitsInSelectionBox(selectionStart, Input.mousePosition)) unit.isSelected = !units.Contains(unit);
         }
 
@@ -61,20 +67,34 @@ public class UnitSelection : MonoBehaviour {
             if (hit.collider.CompareTag("unit")) {
                 SelectUnit(hit.collider.GetComponent<Unit> ());
             } else if (isSelectionActive) {
-                SelectTarget(hit.point);
+                Vector3 targetPoint = hit.point;
+                if (hit.collider.CompareTag("tower")) {
+                    Debug.Log("targetting tower");
+                    targetPoint = hit.transform.position;
+                    targetPoint.x += 4f;
+                    targetPoint.z -= 1.5f;
+                    currentTowerTarget = hit.transform;
+                }
+                SelectTarget(targetPoint);
+                currentTowerTarget = null;
             }
         }
     }
 
     void SelectUnit (Unit unit) {
         if (!isSelectionActive) {
+            foreach (Unit toDeselect in units) {
+                toDeselect.isSelected = false;
+            }
             units.Clear();
             isSelectionActive = true;
         }
 
         if (units.Contains (unit)) {
+            unit.isSelected = false;
             units.Remove (unit);
         } else {
+            unit.isSelected = true;
             units.Add(unit);
         }
     }
@@ -95,19 +115,19 @@ public class UnitSelection : MonoBehaviour {
                     }
                 }
             }
-            if (isSame) {
+            if (isSame && formation.GetUnitCount () == units.Count) {
                 formation.leader.GetComponent<FollowNavAgent>().SetDestination(point);
+                formation.SetTowerTarget(currentTowerTarget);
             } else {
                 foreach (Unit unit in units) {
                     unit.GetComponent<FollowNavAgent> ().agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
 
-                    if (unit.formation && unit.formation.leader == unit) {
-                        unit.formation.BreakFormation();
-                    } else if (unit.formation) {
+                    if (unit.formation) {
                         unit.formation.RemoveUnit(unit);
                     }
                 }
                 CreateFormation(point);
+                units[0].formation.SetTowerTarget(currentTowerTarget);
             }
         } else if (units.Count == 1) {
             Unit unit = units[0];
@@ -143,6 +163,7 @@ public class UnitSelection : MonoBehaviour {
         closestUnit.GetComponent<FollowNavAgent> ().agent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
 
         Formation formation = Instantiate(formationPrefab, closestUnit.GetComponent<FollowNavAgent>().agent.transform.position, Quaternion.identity).GetComponent<Formation> ();
+        formation.unitSelection = this;
         formation.transform.SetParent(closestUnit.GetComponent<FollowNavAgent> ().agent.transform);
         formation.SetUnitsAndTarget(closestUnit, units, target);
     }

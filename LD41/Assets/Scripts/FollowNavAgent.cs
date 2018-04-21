@@ -10,6 +10,10 @@ public class FollowNavAgent : MonoBehaviour {
     public Transform raycastPoint;
     public LayerMask terrainMask;
 
+    void Start () {
+        agent.updateRotation = false;
+    }
+
     public void SetDestination (Vector3 position) {
         targetToFollow = null;
         position.y = agent.transform.position.y;

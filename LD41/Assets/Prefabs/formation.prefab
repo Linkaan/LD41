@@ -52,8 +52,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spotPrefab: {fileID: 1315288377537368, guid: 57d2805693a594a2e9a456b853df57d0, type: 2}
+  unitSelection: {fileID: 0}
   leader: {fileID: 0}
   formationSpeed: 3
   defaultRelativeDistance: 2
   spotUpdateLagThreshold: 14
   formationUpdateRate: 0.2
+  minInnerRadius: 4.2
+  formationType: 0

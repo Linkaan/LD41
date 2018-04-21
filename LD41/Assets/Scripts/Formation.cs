@@ -3,9 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
+public enum FormationType {
+    BoxFormation,
+    DonutFormation
+}
+
 public class Formation : MonoBehaviour {
 
     public GameObject spotPrefab;
+    public UnitSelection unitSelection;
 
     public Unit leader;
     public float formationSpeed;
@@ -13,15 +19,22 @@ public class Formation : MonoBehaviour {
     public int spotUpdateLagThreshold;
     public float formationUpdateRate;
 
+    public float minInnerRadius;
+
+    public FormationType formationType;
+
     private float lastFormationUpdate;
 
     private float relativeDistance;
     private int unitLagCount;
 
     private float rotationOffset;
+    private float innerRadius;
 
     private List<Unit> units;
     private List<Spot> spots;
+
+    private Transform currentTowerTarget;
 
     void Awake () {
         spots = new List<Spot>();
@@ -29,23 +42,69 @@ public class Formation : MonoBehaviour {
         relativeDistance = defaultRelativeDistance;
         lastFormationUpdate = -formationUpdateRate;
         rotationOffset = 0;
+        innerRadius = minInnerRadius;
+        //formationType = FormationType.DonutFormation;
     }
 
     void Update () {
         if (Time.time - lastFormationUpdate >= formationUpdateRate) {
             lastFormationUpdate = Time.time;
+
+            if (currentTowerTarget != null &&
+                formationType == FormationType.BoxFormation &&
+                Vector3.Distance(leader.transform.position, currentTowerTarget.transform.position) < minInnerRadius * relativeDistance) {
+
+                foreach (Formation formation in FindObjectsOfType<Formation> ()) {
+                    if (formation == this) continue;
+                    if (formation.currentTowerTarget == currentTowerTarget) {
+                        units.AddRange(formation.units);
+                        leader = formation.leader;
+                        formation.BreakFormation ();
+                    }
+                }
+
+                ChangeFormation(FormationType.DonutFormation);
+                return;
+            }
+
             FixFormation();
             FixUnitLag();
         }
     }
 
+    void ChangeFormation (FormationType newFormationType) {
+        if (formationType == newFormationType) return;
+
+        formationType = newFormationType;
+        CreateNewFormation ();
+    }
+
+    void CreateNewFormation () {
+        foreach (Unit unit in units) {
+            unit.GetComponent<FollowNavAgent>().targetToFollow = null;
+            unit.spot = null;
+            unit.formation = null;
+        }
+
+        Formation formation = Instantiate(unitSelection.formationPrefab, leader.GetComponent<FollowNavAgent>().agent.transform.position, Quaternion.identity).GetComponent<Formation>();
+        formation.unitSelection = unitSelection;
+        formation.transform.SetParent(leader.GetComponent<FollowNavAgent>().agent.transform);
+        formation.formationType = formationType;
+        formation.currentTowerTarget = currentTowerTarget;
+        formation.SetUnitsAndTarget(leader, units, leader.GetComponent<FollowNavAgent>().agent.destination);
+
+        Destroy(this.gameObject);
+    }
+
     void FixFormation () {
         if (!CheckValidSpots()) {
+            if (formationType == FormationType.DonutFormation) {
+                ExpandInnerRadius ();
+            }
             bool success = ContractFormation();
-            /*if (!success) {
+            if (!success) {
                 success = RotateFormation();   
-            }*/
-            Debug.Log("could fix formation: " + success);
+            }
         } else {
             TryRevertingFormation();   
         }
@@ -101,6 +160,18 @@ public class Formation : MonoBehaviour {
         return canUpdate;
     }
 
+    bool ExpandInnerRadius () {
+        innerRadius += 0.1f;
+        if (innerRadius > minInnerRadius * relativeDistance) {
+            innerRadius = minInnerRadius * relativeDistance;
+            return false;
+        }
+
+        bool canUpdate = CanUpdateFormation();
+        if (canUpdate) UpdateSpots(false);
+        return canUpdate;
+    }
+
     bool RotateFormation () {
         rotationOffset += 10f;
         if (rotationOffset > 360f) {
@@ -127,12 +198,23 @@ public class Formation : MonoBehaviour {
 
         if (Mathf.Abs(rotationOffset - 0.0f) > Mathf.Epsilon) {
             float originalRotation = rotationOffset;
-            rotationOffset += 10.0f * (Mathf.Abs(rotationOffset) / rotationOffset);
+            rotationOffset -= 10.0f * (Mathf.Abs(rotationOffset) / rotationOffset);
             rotationOffset = Mathf.Abs(rotationOffset) < 10.0f ? 0.0f : rotationOffset;
             if (CanUpdateFormation ()) {
                 UpdateSpots (false);
             } else {
                 rotationOffset = originalRotation;
+            }
+        }
+
+        if (innerRadius > minInnerRadius) {
+            float originalInnerRadius = innerRadius;
+            innerRadius -= 0.1f;
+            innerRadius = Mathf.Clamp(innerRadius, minInnerRadius, minInnerRadius * relativeDistance);
+            if (CanUpdateFormation ()) {
+                UpdateSpots (false);
+            } else {
+                innerRadius = originalInnerRadius;
             }
         }
     }
@@ -177,8 +259,6 @@ public class Formation : MonoBehaviour {
         List<Vector3> spotPositions = CalculateSpotPositions();
         foreach (Vector3 position in spotPositions) AddSpotAtLocation(position);
 
-        AssignSpot (leader, GetClosestSpot (leader.GetComponent<FollowNavAgent>().agent.transform.position));
-
         ReassignSpots ();
     }
 
@@ -201,42 +281,63 @@ public class Formation : MonoBehaviour {
     List<Vector3> CalculateSpotPositions () {
         List<Vector3> spotPositions = new List<Vector3>();
 
-        // assuming box formation
-        float sqrtSpotCount = Mathf.Sqrt(units.Count);
-        int formationWidth = Mathf.FloorToInt(sqrtSpotCount);
-        int formationHeight = Mathf.CeilToInt(sqrtSpotCount);
-
-        if (formationWidth * formationHeight > units.Count) {
-            if (formationHeight > 1) {
-                formationHeight -= 1;
-            } else {
-                formationWidth -= 1;
-            }
-        }
-
         Vector3 leaderPos = leader.GetComponent<FollowNavAgent>().agent.transform.position;
 
-        for (int x = 0; x < formationWidth; x++) {
-            for (int y = 0; y < formationHeight; y++) {
-                Vector3 spotPosition = leaderPos;
+        switch (formationType) {
+            case FormationType.BoxFormation:
+                float sqrtSpotCount = Mathf.Sqrt(units.Count);
+                int formationWidth = Mathf.FloorToInt(sqrtSpotCount);
+                int formationHeight = Mathf.CeilToInt(sqrtSpotCount);
 
-                spotPosition.x -= x * relativeDistance;
-                spotPosition.z -= y * relativeDistance;
+                if (formationWidth * formationHeight > units.Count) {
+                    if (formationHeight > 1) {
+                        formationHeight -= 1;
+                    } else {
+                        formationWidth -= 1;
+                    }
+                }
 
-                spotPositions.Add(RotateAroundPivot (spotPosition, leaderPos, Vector3.up * rotationOffset));
-            }
-        }
+                for (int x = 0; x < formationWidth; x++) {
+                    for (int y = 0; y < formationHeight; y++) {
+                        Vector3 spotPosition = leaderPos;
 
-        int spotsToAdd = units.Count - (formationWidth * formationHeight);
-        if (spotsToAdd > 0) {
-            for (int x = 0; x < spotsToAdd; x++) {
-                Vector3 spotPosition = leaderPos;
+                        spotPosition.x -= x * relativeDistance;
+                        spotPosition.z -= y * relativeDistance;
 
-                spotPosition.x -= x * relativeDistance;
-                spotPosition.z -= formationHeight * relativeDistance;
+                        spotPositions.Add(RotateAroundPivot (spotPosition, leaderPos, Vector3.up * rotationOffset));
+                    }
+                }
 
-                spotPositions.Add(RotateAroundPivot(spotPosition, leaderPos, Vector3.up * rotationOffset));
-            }
+                int spotsToAdd = units.Count - (formationWidth * formationHeight);
+                if (spotsToAdd > 0) {
+                    for (int x = 0; x < spotsToAdd; x++) {
+                        Vector3 spotPosition = leaderPos;
+
+                        spotPosition.x -= x * relativeDistance;
+                        spotPosition.z -= formationHeight * relativeDistance;
+
+                        spotPositions.Add(RotateAroundPivot(spotPosition, leaderPos, Vector3.up * rotationOffset));
+                    }
+                }
+                break;
+            case FormationType.DonutFormation:
+                for (int ring = 0; spotPositions.Count < units.Count; ring++) {
+                    float ringRadius = innerRadius + relativeDistance * ring;
+                    float ringCircumference = ringRadius * Mathf.PI * 2;
+                    int spotsOnRing = Mathf.FloorToInt(ringCircumference / relativeDistance);
+                    for (int spot = 0; spot < spotsOnRing; spot++) {
+                        if (spotPositions.Count >= units.Count) break;
+                        Vector3 spotPosition = leaderPos;
+
+                        float angle = (360f / spotsOnRing) * spot;
+
+                        spotPosition.x -= innerRadius - (ringRadius * Mathf.Sin(angle * Mathf.Deg2Rad));
+                        spotPosition.z -= (ringRadius * Mathf.Cos(angle * Mathf.Deg2Rad));
+
+                        spotPositions.Add(spotPosition);
+                    }
+                }
+                break;
         }
 
         Debug.Assert(spotPositions.Count == units.Count);
@@ -287,13 +388,16 @@ public class Formation : MonoBehaviour {
         }
     }
 
-    void ReassignSpots () {
+    void ReassignSpots () {       
         foreach (Spot spot in spots) {
-            if (spot.occupier && spot.occupier != leader) {
+            if (spot.occupier) {
+                spot.occupier.GetComponent<FollowNavAgent>().targetToFollow = null;
                 spot.occupier.spot = null;
                 spot.occupier = null;
             }
         }
+
+        AssignSpot(leader, GetClosestSpot(leader.GetComponent<FollowNavAgent>().agent.transform.position));
 
         foreach (Spot spot in spots) {
             if (!spot.occupier) AssignSpot(GetClosestUnit(spot.transform.position), spot);
@@ -323,7 +427,14 @@ public class Formation : MonoBehaviour {
         if (units.Count == 1) {
             BreakFormation ();
         } else {
-            AddSpots();
+            if (rogueUnit == leader) {
+                Vector3 targetPos = leader.GetComponent<FollowNavAgent>().agent.destination;
+                leader = units[0];
+                leader.GetComponent<FollowNavAgent> ().SetDestination(targetPos);
+                CreateNewFormation();
+            } else {
+                AddSpots();
+            }
         }
     }
 
@@ -339,5 +450,16 @@ public class Formation : MonoBehaviour {
 
         leader.GetComponent<FollowNavAgent>().SetDestination(target);
         AddSpots();
+    }
+
+    public void SetTowerTarget (Transform towerTarget) {
+        currentTowerTarget = towerTarget;
+        if (currentTowerTarget == null) {
+            ChangeFormation(FormationType.BoxFormation);
+        }
+    }
+
+    public int GetUnitCount () {
+        return units.Count;
     }
 }
