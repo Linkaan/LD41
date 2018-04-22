@@ -23,6 +23,10 @@ public class Formation : MonoBehaviour {
 
     public FormationType formationType;
 
+    public Transform currentTowerTarget;
+
+    public Vector3 targetPoint;
+
     private float lastFormationUpdate;
 
     private float relativeDistance;
@@ -33,8 +37,6 @@ public class Formation : MonoBehaviour {
 
     private List<Unit> units;
     private List<Spot> spots;
-
-    private Transform currentTowerTarget;
 
     void Awake () {
         spots = new List<Spot>();
@@ -49,6 +51,8 @@ public class Formation : MonoBehaviour {
     void Update () {
         if (Time.time - lastFormationUpdate >= formationUpdateRate) {
             lastFormationUpdate = Time.time;
+
+            Debug.Log(currentTowerTarget);
 
             if (currentTowerTarget != null &&
                 formationType == FormationType.BoxFormation &&
@@ -91,7 +95,7 @@ public class Formation : MonoBehaviour {
         formation.transform.SetParent(leader.GetComponent<FollowNavAgent>().agent.transform);
         formation.formationType = formationType;
         formation.currentTowerTarget = currentTowerTarget;
-        formation.SetUnitsAndTarget(leader, units, leader.GetComponent<FollowNavAgent>().agent.destination);
+        formation.SetUnitsAndTarget(leader, units, targetPoint);
 
         Destroy(this.gameObject);
     }
@@ -131,8 +135,6 @@ public class Formation : MonoBehaviour {
 
             return;
         }
-
-        Debug.Log("formation lag count " + unitLagCount);
 
         if (unitLagCount++ > spotUpdateLagThreshold) {
             unitLagCount = 0;
@@ -409,6 +411,9 @@ public class Formation : MonoBehaviour {
             unit.GetComponent<FollowNavAgent> ().targetToFollow = null;
             unit.spot = null;
             unit.formation = null;
+            if (currentTowerTarget) {
+                unit.GetComponent<Soldier> ().SetTowerTarget(currentTowerTarget);
+            }
         }
 
         Destroy(this.gameObject);
@@ -428,9 +433,7 @@ public class Formation : MonoBehaviour {
             BreakFormation ();
         } else {
             if (rogueUnit == leader) {
-                Vector3 targetPos = leader.GetComponent<FollowNavAgent>().agent.destination;
                 leader = units[0];
-                leader.GetComponent<FollowNavAgent> ().SetDestination(targetPos);
                 CreateNewFormation();
             } else {
                 AddSpots();
@@ -448,7 +451,7 @@ public class Formation : MonoBehaviour {
             unit.formation = this;
         }
 
-        leader.GetComponent<FollowNavAgent>().SetDestination(target);
+        SetTargetPoint(target);
         AddSpots();
     }
 
@@ -457,6 +460,11 @@ public class Formation : MonoBehaviour {
         if (currentTowerTarget == null) {
             ChangeFormation(FormationType.BoxFormation);
         }
+    }
+
+    public void SetTargetPoint (Vector3 targetPoint) {
+        this.targetPoint = targetPoint;
+        leader.GetComponent<FollowNavAgent>().SetDestination(targetPoint);
     }
 
     public int GetUnitCount () {

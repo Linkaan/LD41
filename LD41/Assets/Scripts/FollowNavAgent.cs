@@ -10,7 +10,10 @@ public class FollowNavAgent : MonoBehaviour {
     public Transform raycastPoint;
     public LayerMask terrainMask;
 
+    private Soldier soldier;
+
     void Start () {
+        soldier = GetComponent<Soldier>();
         agent.updateRotation = false;
     }
 
@@ -26,6 +29,19 @@ public class FollowNavAgent : MonoBehaviour {
             //pos.y = 0.75f;
             targetToFollow.position = pos;
             agent.SetDestination(targetToFollow.position);
+        }
+
+        if (soldier.order != Commands.Attack) {
+            Vector3 agentPos = agent.transform.position;
+            agentPos.y = 0;
+            Vector3 destPos = agent.destination;
+            destPos.y = 0;
+            float distToTarget = Vector3.Distance(agentPos, destPos);
+            if (distToTarget > 0.1f || agent.velocity.x > 0.1f || agent.velocity.z > 0.1f) {
+                soldier.order = Commands.Goto;
+            } else {
+                soldier.order = Commands.None;
+            }
         }
     }
 		

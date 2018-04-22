@@ -9,6 +9,17 @@ public class UnitSelection : MonoBehaviour {
     public GameObject unitPrefab;
     public GameObject navMeshUnitPrefab;
 
+    public GameObject hudCanvas;
+    public GameObject gameOverCanvas;
+
+    public Transform[] spawnSpots;
+    public LayerMask terrainMask;
+
+    public int numInitialUnits;
+
+    public int towersDestroyedCount;
+    public int unitsDeadCount;
+
     private List<Unit> units;
     private List<Unit> unitsToDeselect;
 
@@ -20,11 +31,17 @@ public class UnitSelection : MonoBehaviour {
 
     private Transform currentTowerTarget;
 
+    private bool gameOver;
+
     void Start () {
         units = new List<Unit>();
+        for (int i = 0; i < numInitialUnits; i++) {
+            CreateUnitAtSpawnSpot();
+        }
     }
 
     void Update () {
+        if (gameOver) return;
         CancelSelection ();
 
         CreateSelectionBox ();
@@ -35,19 +52,35 @@ public class UnitSelection : MonoBehaviour {
                 foreach (Unit unit in units) unit.isSelected = false;
                 units.Clear();
             }
-            foreach (Unit unit in GetUnitsInSelectionBox(selectionStart, Input.mousePosition)) unit.isSelected = !units.Contains(unit);
+
+            List<Unit> selectedUnits = GetUnitsInSelectionBox(selectionStart, Input.mousePosition);
+
+            foreach (Unit unit in selectedUnits) unit.isSelected = true;
+
+            unitsToDeselect = selectedUnits;
         }
 
         if (Input.GetMouseButtonUp (0)) {
             CreateSelection ();
         } else if (Input.GetMouseButtonDown (1)) {
-            CreateUnit ();
+            isSelectionActive = false;
+            foreach (Unit unit in units) unit.isSelected = false;
+            units.Clear();
+        }
+    }
+
+    void FixedUpdate () {
+        if (gameOver) return;
+        Unit[] unitsAlive = FindObjectsOfType<Unit>();
+        if (unitsAlive.Length == 0) {
+            GameOver();
         }
     }
 
     void CreateSelection () {
         selectionEnd = Input.mousePosition;
         isSelectionBoxActive = false;
+        unitsToDeselect = null;
 
         if (Vector3.Distance (selectionStart, selectionEnd) < 1.0f) {
             SelectUnitOrTarget();
@@ -69,7 +102,6 @@ public class UnitSelection : MonoBehaviour {
             } else if (isSelectionActive) {
                 Vector3 targetPoint = hit.point;
                 if (hit.collider.CompareTag("tower")) {
-                    Debug.Log("targetting tower");
                     targetPoint = hit.transform.position;
                     targetPoint.x += 4f;
                     targetPoint.z -= 1.5f;
@@ -116,7 +148,7 @@ public class UnitSelection : MonoBehaviour {
                 }
             }
             if (isSame && formation.GetUnitCount () == units.Count) {
-                formation.leader.GetComponent<FollowNavAgent>().SetDestination(point);
+                formation.SetTargetPoint(point);
                 formation.SetTowerTarget(currentTowerTarget);
             } else {
                 foreach (Unit unit in units) {
@@ -127,6 +159,7 @@ public class UnitSelection : MonoBehaviour {
                     }
                 }
                 CreateFormation(point);
+                units[0].formation.SetTargetPoint(point);
                 units[0].formation.SetTowerTarget(currentTowerTarget);
             }
         } else if (units.Count == 1) {
@@ -137,6 +170,7 @@ public class UnitSelection : MonoBehaviour {
             }
 
             unit.GetComponent<FollowNavAgent> ().SetDestination (point);
+            unit.GetComponent<Soldier> ().SetTowerTarget(currentTowerTarget);
         }
     }
 
@@ -171,8 +205,6 @@ public class UnitSelection : MonoBehaviour {
     void CancelSelection () {
         if (isSelectionActive && Input.GetKeyDown(KeyCode.Escape)) {
             isSelectionActive = false;
-
-
             foreach (Unit unit in units) unit.isSelected = false;
             units.Clear ();
         }
@@ -220,6 +252,40 @@ public class UnitSelection : MonoBehaviour {
             follower.agent = agent;
             follower.raycastPoint = agent.transform.GetChild(0);
         }
+    }
+
+    void CreateUnitAtSpawnSpot () {
+        RaycastHit hit;
+        Transform raycastPoint = spawnSpots[Random.Range(0, spawnSpots.Length)];
+        Vector3 ray = raycastPoint.TransformDirection(Vector3.down) * 100;
+        if (Physics.Raycast(raycastPoint.position, ray, out hit, 100, terrainMask)) {
+            Vector3 randomPos = hit.point + Random.insideUnitSphere * 4f;
+            randomPos.y = hit.point.y;
+            Vector3 navMeshUnitPosition = randomPos;
+            navMeshUnitPosition.y = 0.75f;
+            NavMeshAgent agent = Instantiate(navMeshUnitPrefab, navMeshUnitPosition, Quaternion.identity).GetComponent<NavMeshAgent>();
+            FollowNavAgent follower = Instantiate(unitPrefab, randomPos, Quaternion.identity).GetComponent<FollowNavAgent>();
+            follower.agent = agent;
+            follower.raycastPoint = agent.transform.GetChild(0);
+        }
+    }
+
+    public void DeselectUnit(Unit unit) {
+        if (units.Contains(unit)) {
+            units.Remove(unit);
+        }
+
+        if (unitsToDeselect != null && unitsToDeselect.Contains(unit)) {
+            unitsToDeselect.Remove(unit);
+        }
+    }
+
+    public void GameOver () {
+        gameOver = true;
+        //hudCanvas.SetActive(false);
+        Camera.main.GetComponent<TopdownCamera>().enabled = false;
+        gameOverCanvas.SetActive(true);
+        gameOverCanvas.GetComponent<GameOver>().onGameOver();
     }
 
 }

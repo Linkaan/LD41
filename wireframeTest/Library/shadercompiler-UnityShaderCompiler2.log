@@ -1,0 +1,6 @@
+Base path: /home/linkan/Unity-2017.4.0f1/Editor/Data
+Cmd: initializeCompiler
+Cmd: disassembleShader
+  api=15 insize=2924 outsize=2924 ok=1
+
+Quitting shader compiler process
