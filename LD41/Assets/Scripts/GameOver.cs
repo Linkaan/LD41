@@ -11,15 +11,10 @@ public class GameOver : MonoBehaviour {
 
     public Text gameOverText;
 
-    private float startTime;
-
-    void Start () {
-        startTime = Time.time;
-    }
-
     public void onGameOver() {
-        float timeAlive = Time.time - startTime;
+        float timeAlive = Time.time - selector.startTime;
         gameOverText.text = timeAlive + " seconds alive\n" + selector.towersDestroyedCount + " towers destroyed\n" + selector.unitsDeadCount + " units dead";
+        FindObjectOfType<ScoreManager>().LoadLeaderboard();
     }
 
     public void Retry() {

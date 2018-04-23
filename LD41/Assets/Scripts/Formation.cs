@@ -52,20 +52,29 @@ public class Formation : MonoBehaviour {
         if (Time.time - lastFormationUpdate >= formationUpdateRate) {
             lastFormationUpdate = Time.time;
 
-            Debug.Log(currentTowerTarget);
-
             if (currentTowerTarget != null &&
                 formationType == FormationType.BoxFormation &&
                 Vector3.Distance(leader.transform.position, currentTowerTarget.transform.position) < minInnerRadius * relativeDistance) {
+
+                float minDistance = Vector3.Distance(leader.transform.position, currentTowerTarget.transform.position);
+                Unit newLeader = leader;
 
                 foreach (Formation formation in FindObjectsOfType<Formation> ()) {
                     if (formation == this) continue;
                     if (formation.currentTowerTarget == currentTowerTarget) {
                         units.AddRange(formation.units);
-                        leader = formation.leader;
+
+                        float distance = Vector3.Distance(formation.leader.transform.position, currentTowerTarget.transform.position);
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            newLeader = formation.leader;
+                        }
+
                         formation.BreakFormation ();
                     }
                 }
+
+                leader = newLeader;
 
                 ChangeFormation(FormationType.DonutFormation);
                 return;
@@ -144,7 +153,7 @@ public class Formation : MonoBehaviour {
         foreach (Unit unit in units) {
             if (unit.spot != null) {
                 float distance = Vector3.Distance(unit.GetComponent<FollowNavAgent>().agent.transform.position, unit.spot.transform.position);
-                float speed = unit == leader ? (distance <= relativeDistance ? formationSpeed / 2 : formationSpeed) : formationSpeed * 2.2f;
+                float speed = unit == leader ? (distance <= relativeDistance ? formationSpeed / 1.5f : formationSpeed) : formationSpeed * 2.2f;
                 unit.GetComponent<FollowNavAgent> ().agent.speed = speed;
             }
         }

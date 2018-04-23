@@ -17,6 +17,8 @@ public class Tower : MonoBehaviour {
 
     public UnitSelection unitSelection;
 
+    public SpriteRenderer icon;
+
     public int numUnitsOnDeath;
 
     public float maxHealth;
@@ -26,6 +28,7 @@ public class Tower : MonoBehaviour {
     public float time;
     public float attackRadius;
     public float attackPower;
+    public float blinkSpeed;
 
     private TowerBars towerBars;
     private float startTime;
@@ -34,8 +37,11 @@ public class Tower : MonoBehaviour {
 
     private bool isAlive;
 
-    void Start () {
+    private bool hasPlayedSFX;
+
+    void Start () {        
         unitSelection = FindObjectOfType<UnitSelection>();
+        maxTime = maxTime / unitSelection.difficulty.towerTimeMultiplier;
         canvas = unitSelection.hudCanvas.transform;
         towerBars = Instantiate(towerBarsPrefab).GetComponent<TowerBars> ();
         towerBars.canvasRect = canvas.GetComponent<RectTransform>();
@@ -47,6 +53,8 @@ public class Tower : MonoBehaviour {
         time = maxTime;
         startTime = Time.time;
         isAlive = true;
+        unitSelection.AddTower(this);
+        hasPlayedSFX = false;
     }
 
     void Update() {
@@ -55,6 +63,19 @@ public class Tower : MonoBehaviour {
         time = maxTime - (Time.time - startTime);
         towerBars.time = time;
         towerBars.health = health;
+
+        if (time < maxTime / 2.0f) {
+            bool show = (int)((Time.time - startTime) * blinkSpeed) % 2 == 0;
+            icon.enabled = show;
+
+            if (!hasPlayedSFX) {
+                hasPlayedSFX = true;
+                unitSelection.sfxManager.PlaySound(unitSelection.sfxManager.halfwaySFX);
+            }
+
+        } else {
+            icon.enabled = true;
+        }
 
         if (time <= 0) {
             unitSelection.GameOver();
@@ -74,6 +95,7 @@ public class Tower : MonoBehaviour {
 
         if (health <= 0) {
             isAlive = false;
+            icon.enabled = true;
             OnDeath();
             Destroy(towerBars.gameObject);
             Destroy(this.gameObject);
@@ -81,6 +103,7 @@ public class Tower : MonoBehaviour {
     }
 
     void OnDeath () {
+        unitSelection.RemoveTower(this);
         unitSelection.towersDestroyedCount++;
         for (int i = 0; i < numUnitsOnDeath; i++) {
             Vector3 randomPos = transform.position + Random.insideUnitSphere * 4f;

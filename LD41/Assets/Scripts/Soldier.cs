@@ -97,7 +97,6 @@ public class Soldier : MonoBehaviour {
         Vector3 moveDirection = targetPos - transform.position;
         if (moveDirection != Vector3.zero) {
             float angle = Mathf.Atan2(moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-            Debug.Log(angle);
             //animator.transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
             //Vector3 angles = animator.transform.eulerAngles;
             //angles.x = 45;

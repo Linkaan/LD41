@@ -50,10 +50,7 @@ public class FollowNavAgent : MonoBehaviour {
         Vector3 ray = raycastPoint.TransformDirection(Vector3.down) * 100;
         if (Physics.Raycast(raycastPoint.position, ray, out hit, 100, terrainMask)) {
             Vector3 terrainPoint = hit.point;
-            Debug.DrawLine(raycastPoint.position, hit.point, Color.red);
             transform.position = Vector3.MoveTowards(transform.position, terrainPoint, agent.speed);
-        } else {
-            Debug.DrawRay(raycastPoint.position, ray, Color.red);
         }
 	}
 }

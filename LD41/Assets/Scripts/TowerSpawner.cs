@@ -9,6 +9,8 @@ public class TowerSpawner : MonoBehaviour {
     public Transform raycastPoint;
     public LayerMask terrainMask;
 
+    public DifficultyIncrease difficulty;
+
     public float cooldownTime;
     public float incrementChanceRate;
     public float spawnUpdateRate;
@@ -24,7 +26,7 @@ public class TowerSpawner : MonoBehaviour {
     }
 		
 	void Update () {
-        if (Time.time - lastSpawnUpdate > spawnUpdateRate) {
+        if (Time.time - lastSpawnUpdate > spawnUpdateRate / difficulty.towerSpawnMultiplier) {
             lastSpawnUpdate = Time.time;
 
             if (Time.time - lastSpawnTime > cooldownTime) {

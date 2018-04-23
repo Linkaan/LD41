@@ -4824,13 +4824,16 @@ MonoBehaviour:
     type: 2}
   laser: {fileID: 120865125269167780}
   laserStart: {fileID: 4046322892400502}
+  unitSelection: {fileID: 0}
+  icon: {fileID: 212929535295520384}
   numUnitsOnDeath: 5
   maxHealth: 500
   health: 0
-  maxTime: 30
+  maxTime: 60
   time: 0
   attackRadius: 20
   attackPower: 20
+  blinkSpeed: 2
 --- !u!114 &114478946999963768
 MonoBehaviour:
   m_ObjectHideFlags: 1

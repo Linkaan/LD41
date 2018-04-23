@@ -30,16 +30,20 @@ public class TopdownCamera : MonoBehaviour {
             transform.Translate(Vector3.right * Time.deltaTime * panSpeed * (Input.mousePosition.x - Screen.width * 0.5f) / (Screen.width * 0.5f), Space.World);
             transform.Translate(Vector3.forward * Time.deltaTime * panSpeed * (Input.mousePosition.y - Screen.height * 0.5f) / (Screen.height * 0.5f), Space.World);
         } else {
-            if (horInput > Mathf.Epsilon || Input.mousePosition.x >= Screen.width * (1.0f - scrollEdge)) {
-                transform.Translate(Vector3.right * Mathf.Abs(horInput) * Time.deltaTime * scrollSpeed, Space.World);
-            } else if (horInput < -Mathf.Epsilon || Input.mousePosition.x <= Screen.width * scrollEdge) {
-                transform.Translate(Vector3.right * Mathf.Abs(horInput) * Time.deltaTime * -scrollSpeed, Space.World);
+            bool scrollRight = Input.mousePosition.x >= Screen.width * (1.0f - scrollEdge);
+            bool scrollLeft = Input.mousePosition.x <= Screen.width * scrollEdge;
+            if (horInput > Mathf.Epsilon || scrollRight) {
+                transform.Translate(Vector3.right * Mathf.Abs(scrollRight ? 1.0f : horInput) * Time.deltaTime * scrollSpeed, Space.World);
+            } else if (horInput < -Mathf.Epsilon || scrollLeft) {
+                transform.Translate(Vector3.right * Mathf.Abs(scrollLeft ? 1.0f : horInput) * Time.deltaTime * -scrollSpeed, Space.World);
             }
 
-            if (verInput > Mathf.Epsilon || Input.mousePosition.y >= Screen.height * (1.0f - scrollEdge)) {
-                transform.Translate(Vector3.forward * Mathf.Abs(verInput) * Time.deltaTime * scrollSpeed, Space.World);
-            } else if (verInput < -Mathf.Epsilon || Input.mousePosition.y <= Screen.height * scrollEdge) {
-                transform.Translate(Vector3.forward * Mathf.Abs(verInput) * Time.deltaTime * -scrollSpeed, Space.World);
+            bool scrollUp = Input.mousePosition.y >= Screen.height * (1.0f - scrollEdge);
+            bool scrollDown = Input.mousePosition.y <= Screen.height * scrollEdge;
+            if (verInput > Mathf.Epsilon || scrollUp) {
+                transform.Translate(Vector3.forward * Mathf.Abs(scrollUp ? 1.0f : verInput) * Time.deltaTime * scrollSpeed, Space.World);
+            } else if (verInput < -Mathf.Epsilon || scrollDown) {
+                transform.Translate(Vector3.forward * Mathf.Abs(scrollDown ? 1.0f : verInput) * Time.deltaTime * -scrollSpeed, Space.World);
             }
         }
 

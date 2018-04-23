@@ -12,6 +12,10 @@ public class UnitSelection : MonoBehaviour {
     public GameObject hudCanvas;
     public GameObject gameOverCanvas;
 
+    public DifficultyIncrease difficulty;
+
+    public SoundManager sfxManager;
+
     public Transform[] spawnSpots;
     public LayerMask terrainMask;
 
@@ -20,8 +24,12 @@ public class UnitSelection : MonoBehaviour {
     public int towersDestroyedCount;
     public int unitsDeadCount;
 
+    public float startTime;
+
     private List<Unit> units;
     private List<Unit> unitsToDeselect;
+
+    private List<Tower> allTowers;
 
     private Vector3 selectionStart;
     private Vector3 selectionEnd;
@@ -31,10 +39,14 @@ public class UnitSelection : MonoBehaviour {
 
     private Transform currentTowerTarget;
 
-    private bool gameOver;
+    public bool gameOver;
+    public float timeAlive;
+    public int unitsAlive;
 
     void Start () {
+        startTime = Time.time;
         units = new List<Unit>();
+        allTowers = new List<Tower>();
         for (int i = 0; i < numInitialUnits; i++) {
             CreateUnitAtSpawnSpot();
         }
@@ -42,13 +54,25 @@ public class UnitSelection : MonoBehaviour {
 
     void Update () {
         if (gameOver) return;
+        timeAlive = Time.time - startTime;
         CancelSelection ();
+
+        if (isSelectionActive && Input.GetMouseButtonDown(0)) {
+            RaycastHit hit;
+            if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100)) {
+                if (hit.collider.CompareTag("tower"))
+                {
+                    SelectUnitOrTarget();
+                    return;
+                }
+            }
+        }
 
         CreateSelectionBox ();
 
         // consider drawing selection box
         if (isSelectionBoxActive) {
-            if (units.Count > 0 && Vector3.Distance(selectionStart, Input.mousePosition) >= 1.0f) {
+            if (units.Count > 0/* && Vector3.Distance(selectionStart, Input.mousePosition) >= 1.0f*/) {
                 foreach (Unit unit in units) unit.isSelected = false;
                 units.Clear();
             }
@@ -60,12 +84,11 @@ public class UnitSelection : MonoBehaviour {
             unitsToDeselect = selectedUnits;
         }
 
-        if (Input.GetMouseButtonUp (0)) {
-            CreateSelection ();
+        if (Input.GetMouseButtonUp (0)) {            
+            CreateSelection();
         } else if (Input.GetMouseButtonDown (1)) {
-            isSelectionActive = false;
-            foreach (Unit unit in units) unit.isSelected = false;
-            units.Clear();
+            unitsToDeselect = null;
+            SelectUnitOrTarget();
         }
     }
 
@@ -82,14 +105,10 @@ public class UnitSelection : MonoBehaviour {
         isSelectionBoxActive = false;
         unitsToDeselect = null;
 
-        if (Vector3.Distance (selectionStart, selectionEnd) < 1.0f) {
-            SelectUnitOrTarget();
-        } else {
-            List<Unit> selectedUnits = GetUnitsInSelectionBox(selectionStart, selectionEnd);
+        List<Unit> selectedUnits = GetUnitsInSelectionBox(selectionStart, selectionEnd);
 
-            foreach (Unit unit in selectedUnits) {
-                SelectUnit(unit);
-            }
+        foreach (Unit unit in selectedUnits) {
+            SelectUnit(unit);
         }
     }
 
@@ -99,6 +118,7 @@ public class UnitSelection : MonoBehaviour {
         if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100)) {
             if (hit.collider.CompareTag("unit")) {
                 SelectUnit(hit.collider.GetComponent<Unit> ());
+                sfxManager.PlaySound(sfxManager.selectSFX);
             } else if (isSelectionActive) {
                 Vector3 targetPoint = hit.point;
                 if (hit.collider.CompareTag("tower")) {
@@ -106,6 +126,9 @@ public class UnitSelection : MonoBehaviour {
                     targetPoint.x += 4f;
                     targetPoint.z -= 1.5f;
                     currentTowerTarget = hit.transform;
+                    sfxManager.PlaySound(sfxManager.attackSFX);
+                } else {
+                    sfxManager.PlaySound(sfxManager.gotoSFX);
                 }
                 SelectTarget(targetPoint);
                 currentTowerTarget = null;
@@ -281,11 +304,62 @@ public class UnitSelection : MonoBehaviour {
     }
 
     public void GameOver () {
+        if (gameOver) return;
         gameOver = true;
+
+        sfxManager.PlaySound(sfxManager.loseSFX);
+
+        FindObjectOfType<TowerSpawner>().enabled = false;
+
         //hudCanvas.SetActive(false);
-        Camera.main.GetComponent<TopdownCamera>().enabled = false;
+        Tower[] towers = FindObjectsOfType<Tower>();
+
+        if (unitsToDeselect != null) {
+            foreach (Unit unit in unitsToDeselect) unit.isSelected = false;
+        }
+
+        if (units != null) {
+            foreach (Unit unit in units) unit.isSelected = false;
+        }
+
+        foreach (Tower tower in towers) {
+            Destroy(tower.GetComponent<LineRenderer>());
+            Destroy(tower);
+        }
+
+        foreach (Unit unit in FindObjectsOfType<Unit>()) {
+            unitsAlive++;
+            Destroy(unit.GetComponent<NavMeshAgent> ());
+            Destroy(unit.GetComponent<Soldier>());
+            if (unit.formation) {
+                unit.formation.BreakFormation();
+            }
+            Destroy(unit);
+        }
+
+        //Camera.main.GetComponent<TopdownCamera>().enabled = false;
         gameOverCanvas.SetActive(true);
         gameOverCanvas.GetComponent<GameOver>().onGameOver();
+    }
+
+    public void AddTower (Tower tower) {
+        sfxManager.PlaySound(sfxManager.towerUpSFX);
+        allTowers.Add(tower);
+    }
+
+    public void RemoveTower (Tower tower) {
+        sfxManager.PlaySound(sfxManager.towerDownSFX);
+        allTowers.Remove(tower);
+    }
+
+    public float MinTowerTime () {
+        float minTime = float.PositiveInfinity;
+        foreach (Tower tower in allTowers) {
+            if (tower.time < minTime) {
+                minTime = tower.time;
+            }
+        }
+        return minTime;
     }
 
 }
