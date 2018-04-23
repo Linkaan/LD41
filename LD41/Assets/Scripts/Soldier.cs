@@ -16,6 +16,7 @@ public class Soldier : MonoBehaviour {
     public Transform healthBarPosition;
 
     public UnitSelection unitSelection;
+    public Transform currentTowerTarget;
 
     public Commands order;
     public Animator animator;
@@ -28,9 +29,7 @@ public class Soldier : MonoBehaviour {
     public bool isAlive;
 
     private HealthBar healthBar;
-    private Unit unit;
-
-    private Transform currentTowerTarget;
+    private Unit unit;    
 
     void Start () {
         unit = GetComponent<Unit>();
@@ -108,7 +107,7 @@ public class Soldier : MonoBehaviour {
     bool isNearTower () {
         Collider[] colliders = Physics.OverlapSphere(transform.position, attackRadius);
         foreach (Collider col in colliders) {
-            if (col.CompareTag("tower")) return true;
+            if (col.gameObject == currentTowerTarget.gameObject) return true;
         }
         return false;
     }

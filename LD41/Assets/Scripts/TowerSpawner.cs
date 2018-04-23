@@ -9,6 +9,7 @@ public class TowerSpawner : MonoBehaviour {
     public Transform raycastPoint;
     public LayerMask terrainMask;
 
+    public UnitSelection selection;
     public DifficultyIncrease difficulty;
 
     public float cooldownTime;
@@ -21,11 +22,15 @@ public class TowerSpawner : MonoBehaviour {
 
     private float spawnChanceRate;
 
+    private float startTime;
+
     void Start () {
+        startTime = Time.time;
         SpawnTower();
     }
 		
 	void Update () {
+        if (selection.towersDestroyedCount == 0 && Time.time - startTime < 30) return;
         if (Time.time - lastSpawnUpdate > spawnUpdateRate / difficulty.towerSpawnMultiplier) {
             lastSpawnUpdate = Time.time;
 

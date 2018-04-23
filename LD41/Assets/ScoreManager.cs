@@ -96,7 +96,7 @@ public class ScoreManager : MonoBehaviour {
 
 		for (int i = 0; i < iterations; i++) {
 			string curUserId = userIds [playerIndex + i];
-			entries [i].text = (playerIndex + 1 + i) + ". " + (curUserId == youUserID ? "you" : curUserId)  + " / " + GetScore (curUserId, "towers");
+			entries [i].text = (playerIndex + 1 + i) + "." + (curUserId == youUserID ? "you" : curUserId)  + "/" + GetScore (curUserId, "towers");
 			entries [i].color = (curUserId == youUserID ? playerColour : Color.black);
 		}
 	}
@@ -159,7 +159,7 @@ public class ScoreManager : MonoBehaviour {
 			return;
 		submitScore.interactable = false;
 		input.interactable = false;
-		dl.AddScore (value, score, time, unitsDead + "/" + unitsAlive);
+		dl.AddScore (value, score, time, unitsDead + "+" + unitsAlive);
 		restartOnLoad = true;
 		ls = leaderboardState.leaderboard;
 		Debug.Log ("Submitted score " + score + " as " + value);

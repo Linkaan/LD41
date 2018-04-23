@@ -422,6 +422,7 @@ public class Formation : MonoBehaviour {
             unit.formation = null;
             if (currentTowerTarget) {
                 unit.GetComponent<Soldier> ().SetTowerTarget(currentTowerTarget);
+                unit.GetComponent<FollowNavAgent>().SetDestination(targetPoint);
             }
         }
 
@@ -439,6 +440,7 @@ public class Formation : MonoBehaviour {
         }
 
         if (units.Count == 1) {
+            //units[0].
             BreakFormation ();
         } else {
             if (rogueUnit == leader) {

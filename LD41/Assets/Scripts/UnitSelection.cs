@@ -12,12 +12,15 @@ public class UnitSelection : MonoBehaviour {
     public GameObject hudCanvas;
     public GameObject gameOverCanvas;
 
+    public Camera minimapCamera;
+
     public DifficultyIncrease difficulty;
 
     public SoundManager sfxManager;
 
     public Transform[] spawnSpots;
     public LayerMask terrainMask;
+    public LayerMask minimapMask;
 
     public int numInitialUnits;
 
@@ -25,6 +28,7 @@ public class UnitSelection : MonoBehaviour {
     public int unitsDeadCount;
 
     public float startTime;
+    public bool isSelectionBoxActive;
 
     private List<Unit> units;
     private List<Unit> unitsToDeselect;
@@ -34,8 +38,7 @@ public class UnitSelection : MonoBehaviour {
     private Vector3 selectionStart;
     private Vector3 selectionEnd;
 
-    private bool isSelectionActive;
-    private bool isSelectionBoxActive;
+    private bool isSelectionActive;    
 
     private Transform currentTowerTarget;
 
@@ -56,17 +59,18 @@ public class UnitSelection : MonoBehaviour {
         if (gameOver) return;
         timeAlive = Time.time - startTime;
         CancelSelection ();
+        RaycastHit hit;
 
+        /*
         if (isSelectionActive && Input.GetMouseButtonDown(0)) {
-            RaycastHit hit;
             if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100)) {
-                if (hit.collider.CompareTag("tower"))
-                {
+                if (hit.collider.CompareTag("tower")) {
                     SelectUnitOrTarget();
                     return;
                 }
             }
         }
+        */
 
         CreateSelectionBox ();
 
@@ -100,7 +104,12 @@ public class UnitSelection : MonoBehaviour {
         }
     }
 
-    void CreateSelection () {
+    void CreateSelection () {    
+        RaycastHit hit;
+        if (!isSelectionBoxActive && Physics.Raycast(minimapCamera.ScreenPointToRay(Input.mousePosition), out hit, 100, minimapMask)) {
+            return;
+        }
+
         selectionEnd = Input.mousePosition;
         isSelectionBoxActive = false;
         unitsToDeselect = null;
@@ -115,17 +124,21 @@ public class UnitSelection : MonoBehaviour {
     void SelectUnitOrTarget () {
         RaycastHit hit;
 
-        if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100)) {
+        if (units != null && units.Count == 0) return;
+
+        if (Physics.Raycast(minimapCamera.ScreenPointToRay(Input.mousePosition), out hit, 100, minimapMask) ||
+            Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100)) {
             if (hit.collider.CompareTag("unit")) {
                 SelectUnit(hit.collider.GetComponent<Unit> ());
                 sfxManager.PlaySound(sfxManager.selectSFX);
             } else if (isSelectionActive) {
                 Vector3 targetPoint = hit.point;
                 if (hit.collider.CompareTag("tower")) {
-                    targetPoint = hit.transform.position;
+                    Tower tower = hit.collider.GetComponentInParent<Tower>();
+                    targetPoint = tower.transform.position;
                     targetPoint.x += 4f;
                     targetPoint.z -= 1.5f;
-                    currentTowerTarget = hit.transform;
+                    currentTowerTarget = tower.transform;
                     sfxManager.PlaySound(sfxManager.attackSFX);
                 } else {
                     sfxManager.PlaySound(sfxManager.gotoSFX);
@@ -234,6 +247,11 @@ public class UnitSelection : MonoBehaviour {
     }
 
     void CreateSelectionBox () {
+        RaycastHit hit;
+        if (Physics.Raycast(minimapCamera.ScreenPointToRay(Input.mousePosition), out hit, 100, minimapMask)) {
+            return;
+        }
+
         if (Input.GetMouseButtonDown (0)) {
             selectionStart = Input.mousePosition;
             isSelectionBoxActive = true;
@@ -329,7 +347,7 @@ public class UnitSelection : MonoBehaviour {
 
         foreach (Unit unit in FindObjectsOfType<Unit>()) {
             unitsAlive++;
-            Destroy(unit.GetComponent<NavMeshAgent> ());
+            Destroy(unit.GetComponent<FollowNavAgent> ());
             Destroy(unit.GetComponent<Soldier>());
             if (unit.formation) {
                 unit.formation.BreakFormation();

@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class DifficultyIncrease : MonoBehaviour {
 
+    public UnitSelection selection;
+
     public float spawnMultiplierIncrease;
     public float towerMultiplierIncrease;
 
@@ -13,7 +15,15 @@ public class DifficultyIncrease : MonoBehaviour {
     public float towerSpawnMultiplier;
     public float towerTimeMultiplier;
 
+    private float startTime;
+
+    void Start () {
+        startTime = Time.time;
+    }
+
     void FixedUpdate () {
+        if (selection.towersDestroyedCount == 0 && Time.time - startTime < 30) return;
+
         if (towerSpawnMultiplier < maxSpawnMultiplier) {
             towerSpawnMultiplier += spawnMultiplierIncrease;
         }
