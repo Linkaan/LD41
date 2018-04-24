@@ -21,6 +21,7 @@ public class UnitSelection : MonoBehaviour {
     public Transform[] spawnSpots;
     public LayerMask terrainMask;
     public LayerMask minimapMask;
+    public LayerMask unitMask;
 
     public int numInitialUnits;
 
@@ -127,11 +128,8 @@ public class UnitSelection : MonoBehaviour {
         if (units != null && units.Count == 0) return;
 
         if (Physics.Raycast(minimapCamera.ScreenPointToRay(Input.mousePosition), out hit, 100, minimapMask) ||
-            Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100)) {
-            if (hit.collider.CompareTag("unit")) {
-                SelectUnit(hit.collider.GetComponent<Unit> ());
-                sfxManager.PlaySound(sfxManager.selectSFX);
-            } else if (isSelectionActive) {
+            Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100, unitMask)) {
+            if (isSelectionActive) {
                 Vector3 targetPoint = hit.point;
                 if (hit.collider.CompareTag("tower")) {
                     Tower tower = hit.collider.GetComponentInParent<Tower>();
@@ -158,11 +156,8 @@ public class UnitSelection : MonoBehaviour {
             isSelectionActive = true;
         }
 
-        if (units.Contains (unit)) {
-            unit.isSelected = false;
-            units.Remove (unit);
-        } else {
-            unit.isSelected = true;
+        unit.isSelected = true;
+        if (!units.Contains (unit)) {            
             units.Add(unit);
         }
     }
@@ -252,7 +247,7 @@ public class UnitSelection : MonoBehaviour {
             return;
         }
 
-        if (Input.GetMouseButtonDown (0)) {
+        if (Input.GetMouseButtonDown (0)) {            
             selectionStart = Input.mousePosition;
             isSelectionBoxActive = true;
         }
@@ -265,6 +260,11 @@ public class UnitSelection : MonoBehaviour {
 
     List<Unit> GetUnitsInSelectionBox (Vector3 selectionStart, Vector3 selectionEnd) {
         List<Unit> selectedUnits = new List<Unit>();
+
+        Unit unitStart = GetUnitMouse(selectionStart);
+        if (unitStart) {
+            selectedUnits.Add(unitStart);
+        }
 
         float xMin = Mathf.Min(selectionStart.x, selectionEnd.x);
         float yMin = Mathf.Min(selectionStart.y, selectionEnd.y);
@@ -279,13 +279,29 @@ public class UnitSelection : MonoBehaviour {
             }
         }
 
+        Unit unitEnd = GetUnitMouse(selectionEnd);
+        if (unitEnd) {
+            selectedUnits.Add(unitEnd);
+        }
+
         return selectedUnits;
+    }
+
+    Unit GetUnitMouse(Vector3 selection) {
+        RaycastHit hit;
+        Ray ray = Camera.main.ScreenPointToRay(selection);
+        if (Physics.Raycast(ray, out hit, 100, unitMask)) {
+            if (hit.collider.CompareTag("unit")) {
+                return hit.collider.GetComponent<Unit> ();
+            }
+        }
+        return null;
     }
 
     void CreateUnit () {
         RaycastHit hit;
 
-        if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100)) {
+        if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100, unitMask)) {
             Vector3 navMeshUnitPosition = hit.point;
             navMeshUnitPosition.y = 0.75f;
             NavMeshAgent agent = Instantiate (navMeshUnitPrefab, navMeshUnitPosition, Quaternion.identity).GetComponent<NavMeshAgent> ();
