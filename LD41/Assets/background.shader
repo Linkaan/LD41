@@ -1,0 +1,1 @@
+﻿Shader "Lines/Background" { Properties{ _Color("Main Color", Color) = (1,1,1,1) } SubShader{ Tags{ "RenderType" = "Opaque" } Pass{ ZWrite on ZTest LEqual Blend SrcAlpha OneMinusSrcAlpha Colormask RGBA Lighting Off Offset 1, 1 Color[_Color] } }}

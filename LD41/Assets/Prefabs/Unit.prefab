@@ -98,7 +98,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1092286692365906}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 45.19323, y: 23.595898, z: -90.86095}
+  m_LocalPosition: {x: 89.1, y: 27.4, z: -51.8}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 4981865835184424}
@@ -177,12 +177,15 @@ MonoBehaviour:
   healthBarPrefab: {fileID: 1468428936379350, guid: 68980ae58c13540e285562685610cdb7,
     type: 2}
   healthBarPosition: {fileID: 4151137063184954}
+  unitSelection: {fileID: 0}
+  currentTowerTarget: {fileID: 0}
   order: 0
   animator: {fileID: 95220198034064474}
   maxHealth: 100
   health: 0
   attackRadius: 4
   attackPower: 20
+  isAlive: 0
 --- !u!114 &114442007376775300
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -290,16 +293,16 @@ SpriteRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
+  m_SortingLayerID: 1351027569
+  m_SortingLayer: 1
   m_SortingOrder: 0
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 23e23b5b9f7d642fc8de2b945e506a33, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 0.24, y: 0.24}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 0
+  m_WasSpriteAssigned: 1
   m_MaskInteraction: 0

@@ -9,5 +9,5 @@ EditorBuildSettings:
     path: Assets/menu.unity
     guid: 0a9ba9b3587ef4cb2aa7e03523fb84ae
   - enabled: 1
-    path: Assets/default.unity
-    guid: 610f9a82eec8f431cad0cb604934775a
+    path: Assets/web.unity
+    guid: 090cfe6c2cabe494480b76a47bfb59cf

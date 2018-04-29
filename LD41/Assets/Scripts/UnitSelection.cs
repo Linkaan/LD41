@@ -128,7 +128,8 @@ public class UnitSelection : MonoBehaviour {
         if (units != null && units.Count == 0) return;
 
         if (Physics.Raycast(minimapCamera.ScreenPointToRay(Input.mousePosition), out hit, 100, minimapMask) ||
-            Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100, unitMask)) {
+            Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100, unitMask)) {           
+
             if (isSelectionActive) {
                 Vector3 targetPoint = hit.point;
                 if (hit.collider.CompareTag("tower")) {
@@ -394,6 +395,10 @@ public class UnitSelection : MonoBehaviour {
             }
         }
         return minTime;
+    }
+
+    void ToggleFullscreen() {
+        Screen.fullScreen = !Screen.fullScreen;
     }
 
 }

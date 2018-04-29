@@ -28,6 +28,7 @@ GameObject:
   - component: {fileID: 65012426068560262}
   - component: {fileID: 114391748304887896}
   - component: {fileID: 120865125269167780}
+  - component: {fileID: 114131705474399696}
   m_Layer: 0
   m_Name: Tower
   m_TagString: tower
@@ -205,6 +206,29 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 0.32, y: 0.32000008, z: 0.20000005}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &114131705474399696
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1259837837286532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03c302b39d9bb4a44815089547adb925, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lineColor: {r: 1, g: 0, b: 0, a: 1}
+  backgroundColor: {r: 0, g: 0, b: 0, a: 0}
+  ZWrite: 1
+  AWrite: 1
+  blend: 1
+  colors:
+  - {r: 1, g: 0, b: 0, a: 1}
+  - {r: 0, g: 1, b: 0.17254902, a: 1}
+  - {r: 0, g: 0.047058824, b: 1, a: 1}
+  - {r: 1, g: 1, b: 1, a: 1}
+  backgroundShader: {fileID: 4800000, guid: a5ae7553cdde5bc4686705ce8a7635fe, type: 3}
+  lineShader: {fileID: 4800000, guid: 66cef2a7ec4303b40854aec5a2642cb4, type: 3}
 --- !u!114 &114306791028771566
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -5012,7 +5036,7 @@ SpriteRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_Materials:
-  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: f64d09897b0b0f144a717709a82dfaaf, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
